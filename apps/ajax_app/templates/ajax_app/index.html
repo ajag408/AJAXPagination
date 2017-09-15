@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Leads AJAX example</title>
+    {% load static %}
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'ajax_app/css/index.css' %}">
+    <script
+      src="http://code.jquery.com/jquery-3.2.1.min.js"
+      integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+      crossorigin="anonymous"></script>
+    <script>
+
+      $(document).ready(function(){
+        var csrftoken = jQuery("[name=csrfmiddlewaretoken]").val();
+        $(document).on('keyup', '#new_lead', function(){
+          // function csrfSafeMethod(method) {
+          //     // these HTTP methods do not require CSRF protection
+          //     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+          // }
+          // $.ajaxSetup({
+          //     beforeSend: function(xhr, settings) {
+          //         if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+          //             xhr.setRequestHeader("X-CSRFToken", csrftoken);
+          //         }
+          //     }
+          // });
+          $.ajax({
+            url: '/new_lead',
+            method: 'post',
+            data: $('#new_lead_form').serialize(),
+            success: function(serverResponse){
+              console.log(serverResponse)
+              if(serverResponse.length >= 20){
+                $('.new_lead_fn').val('')
+                $('.new_lead_ln').val('')
+                $('.new_lead_e').val('')
+                $('.divTableBody').append(serverResponse)
+              }
+            }
+          });
+        });
+
+        $(document).on('keyup', '#edit_lead', function(){
+          $.ajax({
+            url: '/edit_lead/'+$(this).prop('className'),
+            method: 'post',
+            data: $('#edit_lead_form'+$(this).prop('className')).serialize(),
+            success: function(serverResponse){
+              console.log(serverResponse)
+            }
+          });
+        });
+
+        $(document).on('input', ['#filter1', '#filter2', '#filter3'], function(){
+            this_key = $(this).prop('activeElement')['id']
+            if(this_key == 'filter1'||this_key == 'filter2'||this_key == 'filter3'){
+              $.ajax({
+                url: $(this).prop('activeElement')['form']['action'],
+                method: 'post',
+                data: $('#filterForm').serialize(),
+                success: function(serverResponse){
+                  $('.divTable').html('')
+                  $('.divTable').html(serverResponse)
+                }
+              })
+            }
+        });
+
+        $(document).on('click', 'a', function(e){
+          e.preventDefault()
+          console.log($(this).prop('href'))
+          $.ajax({
+            url: $(this).prop('href'),
+            success: function(serverResponse){
+              $('body').html(serverResponse)
+            }
+          });
+        })
+
+      });
+    </script>
+  </head>
+  <body>
+    <div class = 'container-fluid'>
+      <form action = '/filter1' method = 'POST' id = 'filterForm' class = '1'>
+        {% csrf_token %}
+        Name:  <input type = 'text' name = 'first_name' id = 'filter1' class = 'filter'>
+        From: <input type = 'date' name = 'from' value = '2017-08-01' id = 'filter2' class = 'filter'>
+        To: <input type = 'date' name = 'to' value = '2027-08-01' id = 'filter3' class = 'filter'>
+      </form><br><br>
+      <p> <a href = '/'> 1 </a> |<a href = '/index2'> 2 </a>| <a href = '/index3'> 3 </a> </p>
+      <p>leads_id    first name   last name   registered_datetime email</p>
+      <div class="divTable">
+        <div class="divTableHeading"></div>
+        <div class="divTableBody">
+        {%for lead in leads%}
+          <form action = '/edit_lead/{{lead.id}}' method = 'POST' id = 'edit_lead_form{{lead.id}}'>
+            <div class="divTableRow">
+              {% csrf_token %}
+              <div class="divTableCell">{{lead.id}}<input type = 'hidden' name = 'page' value = '1'></div>
+              <div class="divTableCell"><input type = 'text' name = 'first_name' value = '{{lead.first_name}}' id = 'edit_lead' class = '{{lead.id}}'></div>
+              <div class="divTableCell"><input type = 'text' name = 'last_name' value = '{{lead.last_name}}' id = 'edit_lead' class = '{{lead.id}}'></div>
+              <div class="divTableCell">{{lead.registered_datetime}}</div>
+              <div class="divTableCell"><input type = 'text' name = 'email' value = '{{lead.email}}' id = 'edit_lead' class = '{{lead.id}}'></div>
+            </div>
+          </form>
+        {%endfor%}
+          <form action = '/new_lead' method = 'POST' id = 'new_lead_form'>
+            <div class="divTableRow">
+              {% csrf_token %}
+              <div class="divTableCell">&nbsp;<input type = 'hidden' name = 'page' value = '1'></div>
+              <div class="divTableCell"><input type = 'text' name = 'first_name' id = 'new_lead' class = 'new_lead_fn'></div>
+              <div class="divTableCell"><input type = 'text' name = 'last_name' id = 'new_lead' class = 'new_lead_ln'></div>
+              <div class="divTableCell">&nbsp;</div>
+              <div class="divTableCell"><input type = 'text' name = 'email' id = 'new_lead' class = 'new_lead_e'></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
